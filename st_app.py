@@ -70,6 +70,8 @@ with col1:
         label="Predicted GDP Growth (%)",
         value=f"{nowcast:.3f}%"
     )
+    st.caption("Point estimate only — does not reflect model uncertainty.")
+
 
 with col2:
     st.metric(
