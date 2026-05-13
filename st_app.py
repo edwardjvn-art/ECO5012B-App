@@ -1,4 +1,6 @@
 # ECO 5012B - Section 3 - Streamlit Nowcasting App
+# Edward Vale | 100476030
+# April 2026
 # Interactive nowcasting app for German GDP growth
 
 import streamlit as st
@@ -6,17 +8,17 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 
-# page config
+# page configuration
 st.set_page_config(page_title="Germany GDP Nowcaster", layout="wide")
 
-# title and description
+# titles
 st.title("Germany GDP Nowcasting App")
 st.markdown("This app uses the OECD Business Confidence Index (BCI) to nowcast German GDP growth. Based on Ashwin et al. (2024).")
 
-# regression coefficients from our real estimated model (Section 2.3)
+# regression coefficients
 BETA_0    = -48.5858
 BETA_1    = -0.3084   # lagged GDP coefficient
-BETA_S    =  0.4871   # sentiment coefficient - normal times
+BETA_S    =  0.4871   # sentiment coefficient 
 
 # sidebar controls
 st.sidebar.header("Model Controls")
@@ -26,8 +28,7 @@ state = st.sidebar.radio(
     "Select Economic State:",
     ["Normal Times", "Supply Shock"]
 )
-st.sidebar.caption("The 50% reduction is a stylised assumption illustrating weaker sentiment transmission during supply shocks, consistent with the regime-dependence finding in Ashwin et al. (2024).")
-
+st.sidebar.caption("50% reduction reflects weaker sentiment transmission during supply shocks.")
 # adjusting sentiment coefficient based on state
 if state == "Normal Times":
     beta_s_adjusted = BETA_S
@@ -71,7 +72,6 @@ with col1:
         value=f"{nowcast:.3f}%"
     )
     st.caption("Point estimate only — does not reflect model uncertainty.")
-
 
 with col2:
     st.metric(
@@ -137,19 +137,22 @@ try:
         marker=dict(color="green", size=12, symbol="star")
     )
 
-    # crisis shading
-    fig.add_vrect(
-        x0="2008-07-01", x1="2009-06-30",
-        fillcolor="red", opacity=0.1,
-        layer="below", line_width=0,
-        annotation_text="GFC"
-    )
-    fig.add_vrect(
-        x0="2020-01-01", x1="2020-09-30",
-        fillcolor="orange", opacity=0.1,
-        layer="below", line_width=0,
-        annotation_text="COVID"
-    )
+    # crisis shading 
+    date_min = df.index.min()
+    date_max = df.index[-1] + pd.DateOffset(months=3)
+
+    gfc_start, gfc_end = pd.Timestamp("2008-07-01"), pd.Timestamp("2009-06-30")
+    covid_start, covid_end = pd.Timestamp("2020-01-01"), pd.Timestamp("2020-09-30")
+
+    if gfc_start >= date_min and gfc_end <= date_max:
+        fig.add_vrect(x0=gfc_start, x1=gfc_end,
+            fillcolor="red", opacity=0.1, layer="below", line_width=0,
+            annotation_text="GFC")
+
+    if covid_start >= date_min and covid_end <= date_max:
+        fig.add_vrect(x0=covid_start, x1=covid_end,
+            fillcolor="orange", opacity=0.1, layer="below", line_width=0,
+            annotation_text="COVID")
 
     st.plotly_chart(fig, use_container_width=True)
 
@@ -158,18 +161,4 @@ except FileNotFoundError:
 
 # research extension section
 st.header("Research Extension")
-st.markdown("""
-This app illustrates a key finding from Ashwin et al. (2024) — that sentiment informativeness 
-varies across economic regimes. The **Supply Shock** state reduces the sentiment coefficient by 50%, 
-reflecting the finding that during supply-driven crises, business confidence becomes a weaker 
-predictor of GDP growth as output is constrained by factors beyond demand expectations.
-
-The slider allows users to further adjust the sentiment coefficient βS by up to ±50%, 
-exploring how the strength of the sentiment-GDP relationship affects the nowcast. 
-Combined with the state selector, this demonstrates both the level and regime-dependence 
-of sentiment informativeness.
-
-**Research question:** Does the sentiment-GDP relationship differ between demand-driven crises 
-(like the GFC) and supply-driven shocks (like COVID-19)? This app allows users to explore 
-this state-dependent relationship interactively.
-""")
+st.markdown("This app explores whether the sentiment-GDP relationship differs between demand-driven crises and supply-driven shocks — use the controls above to investigate.")
